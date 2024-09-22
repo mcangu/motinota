@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bloc de Notas</title>
+    <!-- Google Material Icons -->
+    <link
+      href="https://fonts.googleapis.com/icon?family=Material+Icons"
+      rel="stylesheet"
+    />
+    <!-- Materialize CSS -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css"
+    />
+    <style>
+      body {
+        padding: 20px;
+        cursor: default; /* Cursor por defecto es una flecha */
+      }
+      .note {
+        position: relative;
+        padding: 20px;
+        margin: 10px 0;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+      }
+      .note .actions {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+      }
+      .note audio {
+        width: 100%;
+      }
+      .material-icons {
+        cursor: default; /* El cursor es una flecha por defecto */
+        color: indigo; /* Iconos en color índigo */
+      }
+      .material-icons:hover {
+        cursor: pointer; /* Cambia a mano cuando el mouse esté encima */
+      }
+
+      /* Diseño Responsive */
+      @media screen and (max-width: 600px) {
+        body {
+          padding: 10px; /* Reducir el padding en móviles */
+        }
+        h4 {
+          font-size: 1.5rem; /* Reducir el tamaño del título en pantallas pequeñas */
+        }
+        .input-field input {
+          font-size: 1.2rem; /* Aumentar ligeramente el tamaño del input en móviles */
+        }
+        button {
+          width: 100%; /* Asegurar que los botones ocupen todo el ancho en móviles */
+          margin-bottom: 10px; /* Añadir espacio entre botones en móviles */
+        }
+        .note {
+          padding: 15px; /* Reducir el padding de las notas en móviles */
+          font-size: 1rem; /* Ajustar el tamaño de las notas para que sean legibles */
+        }
+        .note .actions {
+          top: 5px;
+          right: 5px;
+        }
+        .material-icons {
+          font-size: 1.5rem; /* Ajustar el tamaño de los iconos en móviles */
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h4 class="indigo-text">Bloc de Notas</h4>
+      <!-- Título en color índigo -->
+      <div class="input-field">
+        <input id="note-input" type="text" class="indigo-text" />
+        <label for="note-input" class="indigo-text">Escribe una nota</label>
+        <!-- Label en color índigo -->
+      </div>
+      <button class="btn indigo waves-effect waves-light" id="add-note-btn">
+        Guardar Nota
+        <i class="material-icons right">add</i>
+      </button>
+      <button
+        class="btn indigo lighten-1 waves-effect waves-light"
+        id="record-audio-btn"
+      >
+        Mantén para Grabar
+        <i class="material-icons right">mic</i>
+      </button>
+      <ul class="collection" id="notes-list"></ul>
+    </div>
+
+    <!-- Materialize JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+
+    <script>
+      const notesList = document.getElementById("notes-list");
+      const noteInput = document.getElementById("note-input");
+      const addNoteBtn = document.getElementById("add-note-btn");
+      const recordAudioBtn = document.getElementById("record-audio-btn");
+      let isRecording = false;
+      let mediaRecorder;
+      let audioChunks = [];
+      let isEditing = false;
+      let editingIndex = null;
+
+      // Función para guardar notas en LocalStorage
+      function saveNotes(notes) {
+        localStorage.setItem("notes", JSON.stringify(notes));
+      }
+
+      // Función para cargar notas desde LocalStorage
+      function loadNotes() {
+        const notes = JSON.parse(localStorage.getItem("notes")) || [];
+        notes.forEach((note) => {
+          if (note.type === "text") {
+            addTextNoteToList(note.content);
+          } else if (note.type === "audio") {
+            addAudioNoteToList(note.content);
+          }
+        });
+      }
+
+      // Función para agregar nota de texto al DOM y LocalStorage
+      function addTextNote() {
+        const content = noteInput.value;
+        if (content) {
+          addTextNoteToList(content);
+          const notes = JSON.parse(localStorage.getItem("notes")) || [];
+          notes.push({ type: "text", content });
+          saveNotes(notes);
+          noteInput.value = ""; // Limpiar el input después de guardar
+        }
+      }
+
+      // Función para agregar nota de audio al DOM y LocalStorage
+      function addAudioNote(audioURL) {
+        addAudioNoteToList(audioURL);
+        const notes = JSON.parse(localStorage.getItem("notes")) || [];
+        notes.push({ type: "audio", content: audioURL });
+        saveNotes(notes);
+      }
+
+      // Agrega nota de texto al DOM
+      function addTextNoteToList(content) {
+        const li = document.createElement("li");
+        li.classList.add("collection-item", "note");
+        li.innerHTML = `
+                <span class="note-content">${content}</span>
+                <div class="actions">
+                    <i class="material-icons edit-note">edit</i>
+                    <i class="material-icons delete-note">delete</i>
+                </div>
+            `;
+        notesList.appendChild(li);
+        addNoteListeners(li);
+      }
+
+      // Agrega nota de audio al DOM
+      function addAudioNoteToList(audioURL) {
+        const li = document.createElement("li");
+        li.classList.add("collection-item", "note");
+        li.innerHTML = `
+                <audio controls>
+                    <source src="${audioURL}" type="audio/webm">
+                    Tu navegador no soporta audio HTML5.
+                </audio>
+                <div class="actions">
+                    <i class="material-icons delete-note">delete</i>
+                </div>
+            `;
+        notesList.appendChild(li);
+        addNoteListeners(li);
+      }
+
+      // Escuchar el evento de agregar nota al hacer clic en el botón
+      addNoteBtn.addEventListener("click", addTextNote);
+
+      // Escuchar el evento de agregar nota al presionar "Enter"
+      noteInput.addEventListener("keydown", function (event) {
+        if (event.key === "Enter") {
+          addTextNote();
+        }
+      });
+
+      // Grabar audio
+      recordAudioBtn.addEventListener("mousedown", () => {
+        navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
+          mediaRecorder = new MediaRecorder(stream);
+          mediaRecorder.start();
+          isRecording = true;
+          audioChunks = [];
+          mediaRecorder.ondataavailable = (event) => {
+            audioChunks.push(event.data);
+          };
+          mediaRecorder.onstop = () => {
+            const audioBlob = new Blob(audioChunks, { type: "audio/webm" });
+            const audioURL = URL.createObjectURL(audioBlob);
+            addAudioNote(audioURL);
+          };
+        });
+      });
+
+      // Dejar de grabar cuando se suelte el botón
+      recordAudioBtn.addEventListener("mouseup", () => {
+        if (isRecording && mediaRecorder) {
+          mediaRecorder.stop();
+          isRecording = false;
+        }
+      });
+
+      // Función para agregar listeners de eliminar y editar
+      function addNoteListeners(li) {
+        li.querySelector(".delete-note").addEventListener("click", () => {
+          li.remove();
+          updateLocalStorage();
+        });
+        const editBtn = li.querySelector(".edit-note");
+        if (editBtn) {
+          editBtn.addEventListener("click", () => {
+            const span = li.querySelector(".note-content");
+            const currentContent = span.textContent;
+
+            // Convertir el span en un input para edición en línea
+            const input = document.createElement("input");
+            input.type = "text";
+            input.value = currentContent;
+            span.replaceWith(input);
+
+            // Cambiar el icono de editar por un icono de guardar
+            editBtn.textContent = "save";
+
+            // Guardar la edición cuando se haga clic en el icono de guardar
+            editBtn.addEventListener(
+              "click",
+              () => {
+                const newContent = input.value;
+                const newSpan = document.createElement("span");
+                newSpan.classList.add("note-content");
+                newSpan.textContent = newContent;
+                input.replaceWith(newSpan);
+                editBtn.textContent = "edit";
+                updateLocalStorage();
+              },
+              { once: true }
+            ); // Solo permitir un clic de guardar
+          });
+        }
+      }
+
+      // Actualizar las notas en LocalStorage después de eliminar o editar
+      function updateLocalStorage() {
+        const notes = [];
+        notesList.querySelectorAll(".note").forEach((note) => {
+          if (note.querySelector("span")) {
+            notes.push({
+              type: "text",
+              content: note.querySelector("span").textContent,
+            });
+          } else if (note.querySelector("audio")) {
+            notes.push({
+              type: "audio",
+              content: note.querySelector("audio").querySelector("source").src,
+            });
+          }
+        });
+        saveNotes(notes);
+      }
+
+      // Cargar las notas al iniciar la aplicación
+      loadNotes();
+    </script>
+  </body>
+</html>
