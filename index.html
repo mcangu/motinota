@@ -69,6 +69,11 @@
           font-size: 1.5rem; /* Ajustar el tamaño de los iconos en móviles */
         }
       }
+      .error-message {
+        color: red;
+        font-size: 1.2rem;
+        display: none; /* Ocultar mensaje hasta que sea necesario */
+      }
     </style>
   </head>
   <body>
@@ -91,6 +96,11 @@
         Mantén para Grabar
         <i class="material-icons right">mic</i>
       </button>
+      <p id="permission-message" class="error-message">
+        Permiso para el micrófono denegado. Por favor, habilítalo desde la
+        configuración del navegador (Menú > Configuración > Privacidad y
+        seguridad > Configuración de sitio > Micrófono).
+      </p>
       <ul class="collection" id="notes-list"></ul>
     </div>
 
@@ -102,6 +112,7 @@
       const noteInput = document.getElementById("note-input");
       const addNoteBtn = document.getElementById("add-note-btn");
       const recordAudioBtn = document.getElementById("record-audio-btn");
+      const permissionMessage = document.getElementById("permission-message");
       let isRecording = false;
       let mediaRecorder;
       let audioChunks = [];
@@ -123,9 +134,7 @@
               "El usuario no otorgó permiso para el micrófono o ocurrió un error: ",
               err
             );
-            alert(
-              "Es necesario otorgar permiso para usar el micrófono para grabar audio."
-            );
+            permissionMessage.style.display = "block"; // Mostrar mensaje de error
             throw err;
           });
       }
