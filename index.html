@@ -176,7 +176,6 @@
         li.innerHTML = `
                 <span class="note-content">${content}</span>
                 <div class="actions">
-                    <i class="material-icons share-note">share</i>
                     <i class="material-icons edit-note">edit</i>
                     <i class="material-icons delete-note">delete</i>
                 </div>
@@ -195,7 +194,6 @@
                     Tu navegador no soporta audio HTML5.
                 </audio>
                 <div class="actions">
-                    <i class="material-icons share-note">share</i>
                     <i class="material-icons delete-note">delete</i>
                 </div>
             `;
@@ -262,46 +260,8 @@
       recordAudioBtn.addEventListener("touchstart", startRecording); // Para móviles
       recordAudioBtn.addEventListener("touchend", stopRecording); // Para móviles
 
-      // Función para compartir nota de audio utilizando Web Share API
-      function shareAudio(audioURL) {
-        if (navigator.share) {
-          fetch(audioURL)
-            .then((res) => res.blob())
-            .then((blob) => {
-              const file = new File([blob], "audio.webm", {
-                type: "audio/webm",
-              });
-              navigator
-                .share({
-                  title: "Compartir nota de voz",
-                  files: [file],
-                })
-                .then(() => console.log("Compartido con éxito"))
-                .catch((error) => console.error("Error al compartir", error));
-            })
-            .catch((error) =>
-              console.error("Error al obtener el archivo de audio", error)
-            );
-        } else {
-          alert(
-            "La función de compartir no está disponible en este dispositivo."
-          );
-        }
-      }
-
-      // Función para agregar listeners de compartir, eliminar y editar
+      // Función para agregar listeners de eliminar y editar
       function addNoteListeners(li) {
-        // Listener para compartir
-        const shareBtn = li.querySelector(".share-note");
-        const audioURL = li.querySelector("audio")
-          ? li.querySelector("audio").querySelector("source").src
-          : null;
-        if (audioURL) {
-          shareBtn.addEventListener("click", () => {
-            shareAudio(audioURL);
-          });
-        }
-
         // Listener para eliminar
         li.querySelector(".delete-note").addEventListener("click", () => {
           li.remove();
