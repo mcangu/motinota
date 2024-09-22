@@ -108,6 +108,15 @@
       let isEditing = false;
       let editingIndex = null;
 
+      // Verificar compatibilidad de MediaRecorder
+      if (
+        !navigator.mediaDevices ||
+        !navigator.mediaDevices.getUserMedia ||
+        typeof MediaRecorder === "undefined"
+      ) {
+        alert("Tu navegador no soporta grabación de audio.");
+      }
+
       // Función para guardar notas en LocalStorage
       function saveNotes(notes) {
         localStorage.setItem("notes", JSON.stringify(notes));
@@ -202,6 +211,9 @@
           })
           .catch((error) => {
             console.error("Error al acceder al micrófono:", error);
+            alert(
+              "No se pudo acceder al micrófono. Asegúrate de haber otorgado los permisos."
+            );
           });
       }
 
