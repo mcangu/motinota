@@ -25,21 +25,24 @@
         margin: 10px 0;
         border: 1px solid #e0e0e0;
         border-radius: 8px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
       }
       .note .actions {
-        position: absolute;
-        top: 10px;
-        right: 10px;
+        display: flex;
+        gap: 10px; /* Espacio entre los iconos */
       }
       .note audio {
-        width: 100%;
+        width: calc(100% - 100px); /* Reservar espacio para los iconos */
       }
       .material-icons {
-        cursor: default; /* El cursor es una flecha por defecto */
+        cursor: pointer; /* Cambiar a mano cuando el mouse esté encima */
         color: indigo; /* Iconos en color índigo */
+        font-size: 24px;
       }
       .material-icons:hover {
-        cursor: pointer; /* Cambia a mano cuando el mouse esté encima */
+        color: darkblue; /* Color al pasar el mouse */
       }
 
       /* Diseño Responsive */
@@ -58,21 +61,16 @@
           margin-bottom: 10px; /* Añadir espacio entre botones en móviles */
         }
         .note {
-          padding: 15px; /* Reducir el padding de las notas en móviles */
-          font-size: 1rem; /* Ajustar el tamaño de las notas para que sean legibles */
+          flex-direction: column; /* En móviles, apilar audio e iconos */
+          align-items: flex-start;
+        }
+        .note audio {
+          width: 100%; /* Ajustar el ancho del audio */
         }
         .note .actions {
-          top: 5px;
-          right: 5px;
+          margin-top: 10px; /* Añadir espacio entre el audio y los iconos */
+          gap: 15px; /* Más espacio entre los iconos en móviles */
         }
-        .material-icons {
-          font-size: 1.5rem; /* Ajustar el tamaño de los iconos en móviles */
-        }
-      }
-      .error-message {
-        color: red;
-        font-size: 1.2rem;
-        display: none; /* Ocultar mensaje hasta que sea necesario */
       }
     </style>
   </head>
@@ -96,11 +94,6 @@
         Mantén para Grabar
         <i class="material-icons right">mic</i>
       </button>
-      <p id="permission-message" class="error-message">
-        Permiso para el micrófono denegado. Por favor, habilítalo desde la
-        configuración del navegador (Menú > Configuración > Privacidad y
-        seguridad > Configuración de sitio > Micrófono).
-      </p>
       <ul class="collection" id="notes-list"></ul>
     </div>
 
@@ -183,6 +176,7 @@
         li.innerHTML = `
                 <span class="note-content">${content}</span>
                 <div class="actions">
+                    <i class="material-icons share-note">share</i>
                     <i class="material-icons edit-note">edit</i>
                     <i class="material-icons delete-note">delete</i>
                 </div>
@@ -201,6 +195,7 @@
                     Tu navegador no soporta audio HTML5.
                 </audio>
                 <div class="actions">
+                    <i class="material-icons share-note">share</i>
                     <i class="material-icons delete-note">delete</i>
                 </div>
             `;
@@ -267,12 +262,41 @@
       recordAudioBtn.addEventListener("touchstart", startRecording); // Para móviles
       recordAudioBtn.addEventListener("touchend", stopRecording); // Para móviles
 
-      // Función para agregar listeners de eliminar y editar
+      // Función para compartir nota utilizando Web Share API
+      function shareNoteContent(content) {
+        if (navigator.share) {
+          navigator
+            .share({
+              title: "Nota de Bloc de Notas",
+              text: content,
+            })
+            .then(() => console.log("Compartido con éxito"))
+            .catch((error) => console.error("Error al compartir", error));
+        } else {
+          alert(
+            "La función de compartir no está disponible en este dispositivo."
+          );
+        }
+      }
+
+      // Función para agregar listeners de compartir, eliminar y editar
       function addNoteListeners(li) {
+        // Listener para compartir
+        const shareBtn = li.querySelector(".share-note");
+        const content = li.querySelector(".note-content")
+          ? li.querySelector(".note-content").textContent
+          : "Nota de audio";
+        shareBtn.addEventListener("click", () => {
+          shareNoteContent(content);
+        });
+
+        // Listener para eliminar
         li.querySelector(".delete-note").addEventListener("click", () => {
           li.remove();
           updateLocalStorage();
         });
+
+        // Listener para editar
         const editBtn = li.querySelector(".edit-note");
         if (editBtn) {
           editBtn.addEventListener("click", () => {
