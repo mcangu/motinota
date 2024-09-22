@@ -187,31 +187,43 @@
         }
       });
 
-      // Grabar audio
-      recordAudioBtn.addEventListener("mousedown", () => {
-        navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
-          mediaRecorder = new MediaRecorder(stream);
-          mediaRecorder.start();
-          isRecording = true;
-          audioChunks = [];
-          mediaRecorder.ondataavailable = (event) => {
-            audioChunks.push(event.data);
-          };
+      // Función para iniciar la grabación de audio
+      function startRecording() {
+        navigator.mediaDevices
+          .getUserMedia({ audio: true })
+          .then((stream) => {
+            mediaRecorder = new MediaRecorder(stream);
+            mediaRecorder.start();
+            isRecording = true;
+            audioChunks = [];
+            mediaRecorder.ondataavailable = (event) => {
+              audioChunks.push(event.data);
+            };
+          })
+          .catch((error) => {
+            console.error("Error al acceder al micrófono:", error);
+          });
+      }
+
+      // Función para detener la grabación de audio
+      function stopRecording() {
+        if (isRecording && mediaRecorder) {
+          mediaRecorder.stop();
           mediaRecorder.onstop = () => {
             const audioBlob = new Blob(audioChunks, { type: "audio/webm" });
             const audioURL = URL.createObjectURL(audioBlob);
             addAudioNote(audioURL);
           };
-        });
-      });
-
-      // Dejar de grabar cuando se suelte el botón
-      recordAudioBtn.addEventListener("mouseup", () => {
-        if (isRecording && mediaRecorder) {
-          mediaRecorder.stop();
           isRecording = false;
         }
-      });
+      }
+
+      // Manejo de eventos táctiles y de ratón para grabación
+      recordAudioBtn.addEventListener("mousedown", startRecording); // Para escritorio
+      recordAudioBtn.addEventListener("mouseup", stopRecording); // Para escritorio
+
+      recordAudioBtn.addEventListener("touchstart", startRecording); // Para móviles
+      recordAudioBtn.addEventListener("touchend", stopRecording); // Para móviles
 
       // Función para agregar listeners de eliminar y editar
       function addNoteListeners(li) {
