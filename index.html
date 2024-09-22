@@ -108,13 +108,26 @@
       let isEditing = false;
       let editingIndex = null;
 
-      // Verificar compatibilidad de MediaRecorder
-      if (
-        !navigator.mediaDevices ||
-        !navigator.mediaDevices.getUserMedia ||
-        typeof MediaRecorder === "undefined"
-      ) {
-        alert("Tu navegador no soporta grabación de audio.");
+      // Función para solicitar permisos de micrófono
+      function requestMicrophonePermission() {
+        return navigator.mediaDevices
+          .getUserMedia({ audio: true })
+          .then((stream) => {
+            // Permiso concedido
+            mediaRecorder = new MediaRecorder(stream);
+            return stream;
+          })
+          .catch((err) => {
+            // Error o permiso denegado
+            console.error(
+              "El usuario no otorgó permiso para el micrófono o ocurrió un error: ",
+              err
+            );
+            alert(
+              "Es necesario otorgar permiso para usar el micrófono para grabar audio."
+            );
+            throw err;
+          });
       }
 
       // Función para guardar notas en LocalStorage
@@ -198,23 +211,31 @@
 
       // Función para iniciar la grabación de audio
       function startRecording() {
-        navigator.mediaDevices
-          .getUserMedia({ audio: true })
-          .then((stream) => {
-            mediaRecorder = new MediaRecorder(stream);
-            mediaRecorder.start();
-            isRecording = true;
-            audioChunks = [];
-            mediaRecorder.ondataavailable = (event) => {
-              audioChunks.push(event.data);
-            };
-          })
-          .catch((error) => {
-            console.error("Error al acceder al micrófono:", error);
-            alert(
-              "No se pudo acceder al micrófono. Asegúrate de haber otorgado los permisos."
-            );
-          });
+        if (!mediaRecorder) {
+          // Si el permiso aún no ha sido solicitado, solicitarlo ahora
+          requestMicrophonePermission()
+            .then(() => {
+              startRecordingProcess();
+            })
+            .catch((err) => {
+              console.error(
+                "No se puede iniciar la grabación sin permisos: ",
+                err
+              );
+            });
+        } else {
+          // Si ya se ha concedido el permiso, empezar la grabación
+          startRecordingProcess();
+        }
+      }
+
+      function startRecordingProcess() {
+        mediaRecorder.start();
+        isRecording = true;
+        audioChunks = [];
+        mediaRecorder.ondataavailable = (event) => {
+          audioChunks.push(event.data);
+        };
       }
 
       // Función para detener la grabación de audio
