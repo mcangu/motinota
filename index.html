@@ -262,16 +262,24 @@
       recordAudioBtn.addEventListener("touchstart", startRecording); // Para móviles
       recordAudioBtn.addEventListener("touchend", stopRecording); // Para móviles
 
-      // Función para compartir nota utilizando Web Share API
-      function shareNoteContent(content) {
+      // Función para compartir nota de audio utilizando Web Share API
+      function shareAudio(audioURL) {
         if (navigator.share) {
-          navigator
-            .share({
-              title: "Nota de Bloc de Notas",
-              text: content,
+          fetch(audioURL)
+            .then((res) => res.blob())
+            .then((blob) => {
+              const file = new File([blob], "audio.mp3", { type: "audio/mp3" });
+              navigator
+                .share({
+                  title: "Compartir nota de voz",
+                  files: [file],
+                })
+                .then(() => console.log("Compartido con éxito"))
+                .catch((error) => console.error("Error al compartir", error));
             })
-            .then(() => console.log("Compartido con éxito"))
-            .catch((error) => console.error("Error al compartir", error));
+            .catch((error) =>
+              console.error("Error al obtener el archivo de audio", error)
+            );
         } else {
           alert(
             "La función de compartir no está disponible en este dispositivo."
@@ -283,12 +291,14 @@
       function addNoteListeners(li) {
         // Listener para compartir
         const shareBtn = li.querySelector(".share-note");
-        const content = li.querySelector(".note-content")
-          ? li.querySelector(".note-content").textContent
-          : "Nota de audio";
-        shareBtn.addEventListener("click", () => {
-          shareNoteContent(content);
-        });
+        const audioURL = li.querySelector("audio")
+          ? li.querySelector("audio").querySelector("source").src
+          : null;
+        if (audioURL) {
+          shareBtn.addEventListener("click", () => {
+            shareAudio(audioURL);
+          });
+        }
 
         // Listener para eliminar
         li.querySelector(".delete-note").addEventListener("click", () => {
