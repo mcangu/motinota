@@ -268,7 +268,9 @@
           fetch(audioURL)
             .then((res) => res.blob())
             .then((blob) => {
-              const file = new File([blob], "audio.mp3", { type: "audio/mp3" });
+              const file = new File([blob], "audio.webm", {
+                type: "audio/webm",
+              });
               navigator
                 .share({
                   title: "Compartir nota de voz",
